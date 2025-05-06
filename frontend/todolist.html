@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simple To-Do App</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body {
+      background-color: #f9f9f9;
+    }
+
+    .todo-container {
+      max-width: 500px;
+      margin: 50px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .todo-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .todo-item:last-child {
+      border-bottom: none;
+    }
+
+    .todo-actions button {
+      margin-left: 5px;
+    }
+
+    .edit-input {
+      width: 100%;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="todo-container">
+    <h3 class="text-center mb-4">To-Do List</h3>
+    <div class="input-group mb-3">
+     <!--  //this is a input box -->
+      <input id="todo-input" type="text" class="form-control" placeholder="Enter a task" />  
+      <button class="btn btn-primary" onclick="addTodo()">Add</button>
+    </div>
+    <ul id="todo-list" class="list-unstyled"></ul>
+  </div>
+
+
+  <script>
+    
+    document.addEventListener('DOMContentLoaded',async()=>{
+      try{
+      let data=await fetch('http://localhost:3000',{//here await is used for this fetch statement is completed then next line will execute
+        method:'GET',
+        headers:{'Content-Type':'application/json'},
+
+      })
+      //await is used to when we know the time taking taskes are there here but even that one statement is completed , after other statement will execute
+      let originaldataformat=await data.json();//here await is statement is coming from string format but this is convert into json format so it will delay sometime
+     console.log(originaldataformat);
+     originaldataformat.map(item =>{
+      todos.push({id:item.id,text:item.itemdescription,editing:false});
+      return todos;
+     })
+     renderTodos();
+    }
+     
+      catch (err) {
+    console.error('Fetch failed:', err); // 👈 error will show in console
+  }
+     
+    })
+    let todos = [];
+    function renderTodos() {
+      const list = document.getElementById('todo-list');
+      list.innerHTML = '';
+      todos.forEach((todo, index) => {
+        console.log('line 80:',todo)//we use .map so item is taken,it will loop one by one item 
+        const li = document.createElement('li');
+        li.className = 'todo-item';
+        if (todo.editing) {
+          li.innerHTML = `
+            <input class="form-control edit-input" type="text" value="${todo.text}" onkeyup="updateTodo(event, ${index})" />
+            <div class="todo-actions">
+              <button class="btn btn-success btn-sm" onclick="saveTodo(${todo.ID})">Save</button>
+            </div>
+          `;
+        } else {
+          li.innerHTML = `
+            <span>${todo.text}</span>
+            <div class="todo-actions">
+              <button class="btn btn-sm btn-warning" onclick="editTodo(${index})">Edit</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteTodo(${index})">Delete</button>
+            </div>
+          `;
+        }
+        list.appendChild(li);
+      });
+    }
+
+    function addTodo() {
+let value=document.getElementById('todo-input') /* to access these element */
+let text=value.value;//whatever the value in todo-input that is access to store in text
+fetch('http://localhost:3000/add-item',{//add-item is which route we added to mentioned
+  method:'POST',
+  headers:{'content-type':'application/json'},
+  body:JSON.stringify({text}) //it is a json object,and that total json object is converted into  string format by using json.stringify()
+})
+}
+
+function deleteTodo(index) {
+  const id = todos[index].id;
+  fetch(`http://localhost:3000/delete-item/${id}`, {
+    method: 'DELETE',
+  })
+    .then(res => res.text())
+    .then(data => {
+      console.log(data); // Deleted successfully
+      todos.splice(index, 1); // remove from array
+      renderTodos(); // update UI
+    })
+    .catch(err => {
+      console.log("Error deleting:", err);
+    });
+}
+
+    function editTodo(index) {
+      todos[index].editing = true;
+      renderTodos();
+    }
+
+    function saveTodo(id) {
+      fetch('http://localhost:3000/edit-item',{//add-item is which route we added to mentioned
+  method:'PUT',
+  headers:{'content-type':'application/json'},
+  body:JSON.stringify({id:id,itemdescription:'new description'}) //it is a json object,and that total json object is converted into  string format by using json.stringify()
+})
+      window.location.reload();
+    }
+  </script>
+</body>
+
+</html>
